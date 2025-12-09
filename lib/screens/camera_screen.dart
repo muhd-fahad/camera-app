@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 
+import '../services/camera_service.dart';
 import 'gallery_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -14,105 +14,72 @@ class CameraScreen extends StatefulWidget {
   State<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver {
-  List<CameraDescription> cameras = [];
+class _CameraScreenState extends State<CameraScreen>
+    with WidgetsBindingObserver {
+  late final CameraService _cameraService;
   List<String> images = [];
-  CameraController? cameraController;
+  CameraController? get _controller => _cameraService.controller;
   int selectedCameraIndex = 0;
 
-  static const platform = MethodChannel('com.example/capture');
-
-  Future<void> _getCaptureMessage() async {
-    final logResult = await platform.invokeMethod<String>('captureMessage');
-    debugPrint('Log Result from Native :- - - $logResult - - -');
-  }
+  // Future<void> _getCaptureMessage() async {
+  //   final logResult = await platform.invokeMethod<String>('captureMessage');
+  //   debugPrint('Log Result from Native :- - - $logResult - - -');
+  // }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (cameraController == null || cameraController?.value.isInitialized == false) return;
-    if (state == AppLifecycleState.inactive) {
-      cameraController?.dispose();
-    } else if (state == AppLifecycleState.resumed) {
-      _setupCameraController();
-    }
+    _cameraService.handleAppLifecycleState(state).then((_) {
+      if (!mounted) return;
+      setState(() {});
+    });
   }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _getCaptureMessage();
-    _setupCameraController();
+    _cameraService = CameraService();
+    _cameraService.initialize().then((_) {
+      if (!mounted) return;
+      setState(() {});
+    });
   }
 
   Future<void> _toggleCamera() async {
-    if (cameras.length < 2) return;
-    selectedCameraIndex = (selectedCameraIndex == 0) ? 1 : 0;
-    await cameraController?.dispose();
-    cameraController = CameraController(cameras[selectedCameraIndex], ResolutionPreset.high);
-    await cameraController!
-        .initialize()
-        .then((_) {
-          if (!mounted) return;
-          setState(() {});
-        })
-        .catchError((Object e) {
-          debugPrint('initializing error: $e');
-        });
-  }
-
-  Future<void> _setupCameraController() async {
-    try {
-      cameras = await availableCameras();
-      if (cameras.isNotEmpty) {
-        cameraController = CameraController(cameras[selectedCameraIndex], ResolutionPreset.high);
-
-        await cameraController!.initialize().then((_) {
-          if (!mounted) return;
-          setState(() {});
-        });
-      }
-    } catch (e) {
-      debugPrint('fetching error: $e');
-    }
+    await _cameraService.toggleCamera();
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _takePicture() async {
-    if (cameraController == null || !cameraController!.value.isInitialized) {
-      debugPrint('Camera controller not initialized.');
-      return;
-    }
-    try {
-      final XFile picture = await cameraController!.takePicture();
-      await Gal.putImage(picture.path); // save to gallery
-      setState(() {
-        images.add(picture.path);
+    final picture = await _cameraService.takePicture();
+    if (picture == null) return;
 
-        _getCaptureMessage();
-      });
-      debugPrint('Photo Clicked - ${picture.path}');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Photo saved!')));
-      }
-    } catch (e) {
-      debugPrint('taking picture error: $e');
+    await Gal.putImage(picture.path); // save to gallery
+    setState(() {
+      images.add(picture.path);
+    });
+    debugPrint('Photo Clicked - ${picture.path}');
+    if (mounted) {
+      ScaffoldMessenger.of(context,).showSnackBar(const SnackBar(content: Text('Photo saved!')));
+    }else {
+      return;
     }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    cameraController?.dispose();
+    _cameraService.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // final String imageUrl =
-    //     'https://petapixel.com/assets/uploads/2024/09/Apple-iPhone-16-Pro-Ethereal-photography-240909-1536x1152.jpg';
 
-    if (cameraController == null || cameraController?.value.isInitialized == false) {
+    if (_controller == null ||
+        _controller?.value.isInitialized == false) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
@@ -121,7 +88,10 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 8.0,
+              ),
               child: Row(
                 mainAxisAlignment: .spaceBetween,
                 children: const [
@@ -142,11 +112,15 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                     gradient: LinearGradient(
                       begin: .topLeft,
                       end: .bottomRight,
-                      colors: [Colors.grey.shade800, Colors.black, Colors.grey.shade800],
+                      colors: [
+                        Colors.grey.shade800,
+                        Colors.black,
+                        Colors.grey.shade800,
+                      ],
                     ),
                     borderRadius: .circular(12),
                   ),
-                  child: CameraPreview(cameraController!),
+                  child: CameraPreview(_controller!),
                 ),
               ),
             ),
@@ -159,7 +133,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                   GestureDetector(
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => GalleryScreen(images: images)),
+                      MaterialPageRoute(
+                        builder: (context) => GalleryScreen(images: images),
+                      ),
                     ),
                     child: Container(
                       width: 50,
@@ -195,7 +171,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                       height: 72,
                       padding: EdgeInsets.all(4),
                       decoration: ShapeDecoration(
-                        shape: const CircleBorder(side: BorderSide(color: Colors.white, width: 4)),
+                        shape: const CircleBorder(
+                          side: BorderSide(color: Colors.white, width: 4),
+                        ),
                       ),
                       child: CircleAvatar(
                         backgroundColor: Colors.redAccent,
