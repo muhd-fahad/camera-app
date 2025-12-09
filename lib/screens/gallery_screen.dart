@@ -28,7 +28,6 @@ class GalleryScreen extends StatelessWidget {
               ),
               padding: EdgeInsets.all(8.0),
 
-
               itemCount: images.length,
               // scrollDirection: Axis.horizontal,
               itemBuilder: (context, index) {
