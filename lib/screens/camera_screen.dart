@@ -72,7 +72,7 @@ class _CameraScreenState extends State<CameraScreen>
 
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => GalleryScreen(images: images)),
+      MaterialPageRoute(builder: (_) => GalleryScreen()),
     );
     await _cameraService.resumeCamera();
     if (!mounted) return;
