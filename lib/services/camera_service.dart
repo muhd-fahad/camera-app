@@ -24,11 +24,14 @@ class CameraService {
     // if (state == AppLifecycleState.inactive) {
     //   await cameraController?.dispose();
     // } else
-      if (state == AppLifecycleState.resumed) {
-        if (cameraController == null ||
-            !cameraController!.value.isInitialized) {
-          await _setupCameraController();
-        }
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      // App not visible → fully release camera
+      await pauseCamera();
+    } else if (state == AppLifecycleState.resumed) {
+      // App visible again → re-acquire camera
+      await resumeCamera();
     }
   }
 
@@ -43,7 +46,10 @@ class CameraService {
 
   Future<void> _setupCameraController() async {
     try {
-      cameras = await availableCameras();
+
+      if (cameras.isEmpty) {
+        cameras = await availableCameras();
+      }
       if (cameras.isNotEmpty) {
         cameraController = CameraController(
           cameras[selectedCameraIndex],
@@ -54,6 +60,23 @@ class CameraService {
     } catch (e) {
       debugPrint('fetching error: $e');
     }
+  }
+
+
+  Future<void> pauseCamera() async {
+    if (cameraController != null) {
+      await cameraController!.dispose();
+      cameraController = null;
+      debugPrint('Camera paused (disposed controller)');
+    }
+  }
+
+  Future<void> resumeCamera() async {
+    if (cameraController != null && cameraController!.value.isInitialized) {
+      return;
+    }
+    await _setupCameraController();
+    debugPrint('Camera resumed (reinitialized controller)');
   }
 
   Future<void> toggleCamera() async {
@@ -90,5 +113,6 @@ class CameraService {
 
   void dispose() {
     cameraController?.dispose();
+    cameraController = null;
   }
 }

@@ -21,11 +21,6 @@ class _CameraScreenState extends State<CameraScreen>
   CameraController? get _controller => _cameraService.controller;
   int selectedCameraIndex = 0;
 
-  // Future<void> _getCaptureMessage() async {
-  //   final logResult = await platform.invokeMethod<String>('captureMessage');
-  //   debugPrint('Log Result from Native :- - - $logResult - - -');
-  // }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -62,10 +57,26 @@ class _CameraScreenState extends State<CameraScreen>
     });
     debugPrint('Photo Clicked - ${picture.path}');
     if (mounted) {
-      ScaffoldMessenger.of(context,).showSnackBar(const SnackBar(content: Text('Photo saved!')));
-    }else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Photo saved!')));
+    } else {
       return;
     }
+  }
+
+  Future<void> _openGallery() async {
+    await _cameraService.pauseCamera();
+    if (!mounted) return;
+    setState(() {});
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => GalleryScreen(images: images)),
+    );
+    await _cameraService.resumeCamera();
+    if (!mounted) return;
+    setState(() {});
   }
 
   @override
@@ -78,8 +89,7 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
-    if (controller == null ||
-        controller.value.isInitialized == false) {
+    if (controller == null || controller.value.isInitialized == false) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
@@ -131,41 +141,23 @@ class _CameraScreenState extends State<CameraScreen>
                 mainAxisAlignment: .spaceEvenly,
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => GalleryScreen(images: images),
-                      ),
-                    ),
+                    onTap: _openGallery,
                     child: Container(
                       width: 50,
                       height: 50,
-                      // padding: EdgeInsets.all(4),
                       clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: Colors.grey,
-                        // image: images.isNotEmpty
-                        //     ? DecorationImage(
-                        //   image: FileImage(File(images.last)),
-                        //   fit: BoxFit.cover,
-                        // ): null,
                         borderRadius: BorderRadius.circular(10),
-                        // border: Border.all(width: 2, color: Colors.white),
                       ),
                       child: images.isNotEmpty
-                          ? Image.file(File(images.last), fit: .cover)
-                          : Icon(Icons.image),
+                          ? Image.file(File(images.last), fit: BoxFit.cover)
+                          : const Icon(Icons.image),
                     ),
                   ),
+
                   GestureDetector(
                     onTap: _takePicture,
-                    // onTap: () async {
-                    //   XFile picture = await cameraController!.takePicture();
-                    //   Gal.putImage(picture.path);
-                    //   images.add(picture.path);
-                    //
-                    //   debugPrint('Photo Clicked');
-                    // },
                     child: Container(
                       width: 72,
                       height: 72,
