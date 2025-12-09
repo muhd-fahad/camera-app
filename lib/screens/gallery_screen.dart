@@ -27,24 +27,26 @@ class GalleryScreen extends StatelessWidget {
                 mainAxisSpacing: 4.0,
               ),
               padding: EdgeInsets.all(8.0),
-              reverse: true,
+
 
               itemCount: images.length,
               // scrollDirection: Axis.horizontal,
               itemBuilder: (context, index) {
+
+                final recentImg = images.reversed.toList();
                 return Padding(
                   padding: const .all(4.0),
                   child: GestureDetector(
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ImageDetail(imagePath: images[index],)),
+                      MaterialPageRoute(builder: (context) => ImageDetail(imagePath: recentImg[index],)),
                     ),
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.grey.shade700,
                         borderRadius: .circular(8),
                         image: DecorationImage(
-                          image: FileImage(File(images[index])),
+                          image: FileImage(File(recentImg[index])),
                           fit: BoxFit.cover,
                         ),
                       ),
