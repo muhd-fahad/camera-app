@@ -113,7 +113,7 @@ class _CameraScreenState extends State<CameraScreen>
             Expanded(
               flex: 4,
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(0.0),
                 child: Container(
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
