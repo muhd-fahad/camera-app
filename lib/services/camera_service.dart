@@ -19,11 +19,16 @@ class CameraService {
   }
 
   Future<void> handleAppLifecycleState(AppLifecycleState state) async {
-    if (cameraController == null || cameraController?.value.isInitialized == false) return;
-    if (state == AppLifecycleState.inactive) {
-      await cameraController?.dispose();
-    } else if (state == AppLifecycleState.resumed) {
-      await _setupCameraController();
+    // if (cameraController == null || cameraController?.value.isInitialized == false) return;
+    debugPrint('Camera lifecycle: $state');
+    // if (state == AppLifecycleState.inactive) {
+    //   await cameraController?.dispose();
+    // } else
+      if (state == AppLifecycleState.resumed) {
+        if (cameraController == null ||
+            !cameraController!.value.isInitialized) {
+          await _setupCameraController();
+        }
     }
   }
 

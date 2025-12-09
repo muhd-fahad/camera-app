@@ -77,9 +77,9 @@ class _CameraScreenState extends State<CameraScreen>
 
   @override
   Widget build(BuildContext context) {
-
-    if (_controller == null ||
-        _controller?.value.isInitialized == false) {
+    final controller = _controller;
+    if (controller == null ||
+        controller.value.isInitialized == false) {
       return Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
@@ -120,7 +120,7 @@ class _CameraScreenState extends State<CameraScreen>
                     ),
                     borderRadius: .circular(12),
                   ),
-                  child: CameraPreview(_controller!),
+                  child: CameraPreview(controller),
                 ),
               ),
             ),
