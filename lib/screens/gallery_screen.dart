@@ -14,7 +14,7 @@ class GalleryScreen extends StatefulWidget {
 class _GalleryScreenState extends State<GalleryScreen> {
   final _galleryService = GalleryService();
   List<AssetEntity> _photos = [];
-  // bool _isLoading = true;
+  bool _isGrid = true;
 
   @override
   void initState() {
@@ -31,12 +31,20 @@ class _GalleryScreenState extends State<GalleryScreen> {
     });
   }
 
+  void _gridToggle(){
+    setState(() {
+      _isGrid = !_isGrid;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('All photos (${_photos.length})',
-        ),
+        title: Text('All photos (${_photos.length})',),
+        actions: [
+          IconButton(onPressed:_gridToggle, icon: Icon( _isGrid ? Icons.grid_view_rounded : Icons.view_list_sharp))
+        ],
       ),
       body:  _photos.isEmpty
           ? const Center(
@@ -49,8 +57,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
         padding: const EdgeInsets.all(8.0),
         physics: const BouncingScrollPhysics(),
         gridDelegate:
-        const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
+         SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _isGrid ? 3 : 1,
           crossAxisSpacing: 4.0,
           mainAxisSpacing: 4.0,
         ),
@@ -85,6 +93,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                             ImageDetail(imagePath: file.path),
                       ),
                     );
+                    debugPrint(file.path.split('/').last);
                   },
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
